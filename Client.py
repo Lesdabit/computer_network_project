@@ -103,7 +103,7 @@ class Client:
                         if currFrameNbr > self.frameNbr:
                             self.frameNbr = currFrameNbr
                             self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
-                            time.sleep(0.5)
+                            # time.sleep(0.5)
                 except Exception as e:
                     print(f"Error receiving RTP packet: {e}")
                     if self.playEvent.isSet():
