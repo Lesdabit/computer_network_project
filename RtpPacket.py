@@ -37,17 +37,6 @@ class RtpPacket:
 
 		self.header = header
 		self.payload = payload
-
-		#--------------
-		# TO COMPLETE
-		#--------------
-		# Fill the header bytearray with RTP header fields
-		
-		# header[0] = ...
-		# ...
-		
-		# Get the payload from the argument
-		# self.payload = ...
 		
 	def decode(self, byteStream):
 		"""Decode the RTP packet."""
