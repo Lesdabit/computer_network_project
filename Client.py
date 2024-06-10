@@ -1,5 +1,6 @@
 import sys
 from tkinter import *
+from tkinter import ttk
 import tkinter.messagebox
 from PIL import Image, ImageTk
 import socket
@@ -21,6 +22,9 @@ class Client:
     PLAY = 1
     PAUSE = 2
     TEARDOWN = 3
+    SPEED_0_5X = 4
+    SPEED_1X = 5
+    SPEED_2X = 6
 
     def __init__(self, master, serveraddr, serverport, rtpport, filename):
         print(f"Initializing client with serveraddr={serveraddr}, serverport={serverport}, rtpport={rtpport}, filename={filename}")
@@ -51,22 +55,27 @@ class Client:
         self.start["command"] = self.playMovie
         self.start.grid(row=1, column=1, padx=2, pady=2)
 
+        self.speed = ttk.Combobox(self.master, values=['0.5x', '1x', '2x'], width=10)
+        self.speed.current(1)
+        self.speed.bind("<<ComboboxSelected>>", self.changeSpeed)
+        self.speed.grid(row=1, column=2, padx=2, pady=2)
+
         self.pause = Button(self.master, width=20, padx=3, pady=3)
         self.pause["text"] = "Pause"
         self.pause["command"] = self.pauseMovie
-        self.pause.grid(row=1, column=2, padx=2, pady=2)
+        self.pause.grid(row=1, column=3, padx=2, pady=2)
 
         self.teardown = Button(self.master, width=20, padx=3, pady=3)
         self.teardown["text"] = "Teardown"
         self.teardown["command"] = self.exitClient
-        self.teardown.grid(row=1, column=3, padx=2, pady=2)
+        self.teardown.grid(row=1, column=4, padx=2, pady=2)
 
         self.label = Label(self.master, height=19)
-        self.label.grid(row=0, column=0, columnspan=4, sticky=W+E+N+S, padx=5, pady=5)
+        self.label.grid(row=0, column=0, columnspan=5, sticky=W+E+N+S, padx=5, pady=5)
 
     def setupMovie(self):
-        print("Setting up movie...")
         if self.state == self.INIT:
+            print("Setting up movie...")
             self.sendRtspRequest(self.SETUP)
 
     def exitClient(self):
@@ -76,20 +85,38 @@ class Client:
         os.remove(CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT)
 
     def pauseMovie(self):
-        print("Pausing movie...")
         if self.state == self.PLAYING:
+            print("Pausing movie...")
             self.sendRtspRequest(self.PAUSE)
 
     def playMovie(self):
-        print("Playing movie...")
         if self.state == self.READY:
+            print("Playing movie...")
             threading.Thread(target=self.listenRtp).start()
             self.playEvent = threading.Event()
             self.playEvent.clear()
             self.sendRtspRequest(self.PLAY)
 
+    def changeSpeed(self, event=None):
+        print(f"Changing speed to {self.speed.get()}...")
+        rtsp_speed = self.map_speed_to_rtsp(self.speed.get())
+        print(rtsp_speed)
+        self.sendRtspRequest(rtsp_speed)
+
+    def map_speed_to_rtsp(self, speed):
+
+        if speed == '0.5x':
+            return self.SPEED_0_5X
+        elif speed == '1x':
+            return self.SPEED_1X
+        elif speed == '2x':
+            return self.SPEED_2X
+        else:
+            return self.SPEED_1X
+
     def listenRtp(self):
         print("Listening for RTP packets...")
+
         while True:
             if self.state == self.PLAYING:
                 try:
@@ -103,7 +130,6 @@ class Client:
                         if currFrameNbr > self.frameNbr:
                             self.frameNbr = currFrameNbr
                             self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
-                            # time.sleep(0.5)
                 except Exception as e:
                     print(f"Error receiving RTP packet: {e}")
                     if self.playEvent.isSet():
@@ -164,6 +190,18 @@ class Client:
         elif requestCode == self.TEARDOWN and not self.state == self.INIT:
             request = f"TEARDOWN {self.fileName} RTSP/1.0\nCSeq: {self.rtspSeq}\nSession: {self.sessionId}"
             self.requestSent = self.TEARDOWN
+
+        elif requestCode == self.SPEED_0_5X and (self.state == self.PLAYING or self.state == self.READY or self.state == self.INIT):
+            request = f"SPEED_0_5X {self.fileName} RTSP/1.0\nCSeq: {self.rtspSeq}\nSession: {self.sessionId}"
+            self.requestSent = self.SPEED_0_5X
+        
+        elif requestCode == self.SPEED_1X and (self.state == self.PLAYING or self.state == self.READY or self.state == self.INIT):
+            request = f"SPEED_1X {self.fileName} RTSP/1.0\nCSeq: {self.rtspSeq}\nSession: {self.sessionId}"
+            self.requestSent = self.SPEED_1X
+        
+        elif requestCode == self.SPEED_2X and (self.state == self.PLAYING or self.state == self.READY or self.state == self.INIT):
+            request = f"SPEED_2X {self.fileName} RTSP/1.0\nCSeq: {self.rtspSeq}\nSession: {self.sessionId}"
+            self.requestSent = self.SPEED_2X
 
         else:
             return
