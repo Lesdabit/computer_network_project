@@ -2,7 +2,6 @@ import sys
 from tkinter import *
 from tkinter import ttk
 import tkinter.messagebox
-from PIL import Image, ImageTk
 import socket
 import threading
 import os

@@ -90,9 +90,9 @@ class ServerWorker:
 					
 				if self.state == self.PLAYING:
 					self.clientInfo['event'].set()
-					# self.clientInfo['worker'].join()
+					self.clientInfo['worker'].join()
 					self.clientInfo['event'] = threading.Event()
-					self.clientInfo['worker'] = threading.Thread(target=self.sendRtp, args=(self.speed))
+					self.clientInfo['worker'] = threading.Thread(target=self.sendRtp, args=(self.speed,))
 					self.clientInfo['worker'].start()	
 				else:
 					print("processing PLAY\n")
@@ -103,7 +103,7 @@ class ServerWorker:
 					self.replyRtsp(self.OK_200, seq[1])
 					
 					self.clientInfo['event'] = threading.Event()
-					self.clientInfo['worker'] = threading.Thread(target=self.sendRtp, args=(self.speed))
+					self.clientInfo['worker'] = threading.Thread(target=self.sendRtp, args=(self.speed,))
 					self.clientInfo['worker'].start()
 		
 		# Process PAUSE request
